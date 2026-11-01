@@ -1,0 +1,36 @@
+name: spring-boot-blocking-auditing
+
+on:
+  pull_request:
+    paths:
+      - 'spring-boot-blocking-auditing/**'
+      - '.github/workflows/spring-boot-blocking-auditing.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'spring-boot-blocking-auditing/**'
+      - '.github/workflows/spring-boot-blocking-auditing.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: spring-boot-blocking-auditing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Testcontainers uses the runner's Docker for Postgres and Kafka.
+      - run: ./mvnw -B verify
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: spring-boot-blocking-auditing/target/surefire-reports/
