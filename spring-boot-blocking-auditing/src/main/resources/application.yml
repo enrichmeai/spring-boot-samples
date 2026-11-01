@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: spring-boot-blocking-auditing
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auditing
+    username: auditing
+    password: auditing
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  security:
+    user:
+      name: demo
+      password: demo
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        # delivery.timeout.ms must be >= linger.ms + request.timeout.ms (Kafka producer config rule)
+        request.timeout.ms: 3000
+        delivery.timeout.ms: 5000
+        max.block.ms: 3000
+    consumer:
+      group-id: audit-projection
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+audit:
+  outbox:
+    topic: audit-events
+    poller-enabled: true
+    poll-interval: 1s
+    batch-size: 20
+    # Must be longer than the producer's own limit (max.block.ms + delivery.timeout.ms), so the
+    # producer gives up first and the poller records the failure.
+    send-timeout: 9s
+    max-attempts: 10
+    max-backoff: 5m
