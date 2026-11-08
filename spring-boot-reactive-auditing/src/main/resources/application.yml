@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: spring-boot-reactive-auditing
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/reactive_auditing
+    username: reactive_auditing
+    password: reactive_auditing
+  flyway:
+    # Flyway needs JDBC; the application itself only talks R2DBC.
+    url: jdbc:postgresql://localhost:5432/reactive_auditing
+    user: reactive_auditing
+    password: reactive_auditing
+  security:
+    user:
+      name: demo
+      password: demo
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        # delivery.timeout.ms must be >= linger.ms + request.timeout.ms (kafka-clients ProducerConfig)
+        request.timeout.ms: 3000
+        delivery.timeout.ms: 5000
+        max.block.ms: 3000
+    consumer:
+      group-id: audit-projection
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # One record per poll. With an async (Mono) listener the container pauses polling until every
+      # record of the poll is acknowledged, so this makes the consumer apply records one at a time,
+      # in partition order (so in order per entity). Without it, records of one poll run concurrently.
+      max-poll-records: 1
+    listener:
+      # The listener returns a Mono. spring-kafka forces MANUAL for async listeners anyway and
+      # commits each offset when its Mono completes; this says so explicitly.
+      ack-mode: manual
+
+audit:
+  consumer:
+    dead-letter-topic: audit-events.DLT
+    retries: 3
+    retry-backoff: 200ms
+  outbox:
+    topic: audit-events
+    poller-enabled: true
+    poll-interval: 1s
+    batch-size: 20
+    # Longer than the producer's own limit (max.block.ms + delivery.timeout.ms), so the producer
+    # gives up first and the poller records why.
+    send-timeout: 9s
+    max-attempts: 10
+    max-backoff: 5m
