@@ -5,3 +5,4 @@ Small, runnable Spring Boot samples. Each one is a self-contained Maven project 
 | Sample | What it shows |
 |---|---|
 | [`spring-boot-blocking-auditing`](spring-boot-blocking-auditing/) | Auditing every backend update in a blocking (Spring MVC + JPA) app: a transactional outbox, a polling publisher, Kafka and an idempotent consumer |
+| [`spring-boot-reactive-auditing`](spring-boot-reactive-auditing/) | The same, reactive: WebFlux, R2DBC, a `Mono` Kafka listener, and no blocking calls in application code |
